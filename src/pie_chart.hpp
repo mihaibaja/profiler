@@ -7,17 +7,26 @@
 
 #include <SDL3/SDL.h>
 
+#include <string>
 #include <utility>
 #include <vector>
 
 class pie_chart {
 public:
+    /* Especificacion de una seccion: nombre, proporcion permanente y color.
+     * El color se pasa explicitamente; el chart no elige ninguno por indice. */
+    struct section_spec {
+        std::string name;
+        double      proportion = 0.0;
+        SDL_Color   color      = { 0, 0, 0, 0 };
+    };
+
     /* Cada porcion. El constructor guarda sus parametros y calcula los
      * vertices; calculate_vertices permite recalcularlos cuando avanzan las
      * animaciones. El centro se calcula desde el centro del chart, desplazado
      * hasta un 5 % del radio en la direccion del angulo medio de la seccion. */
     struct section {
-        const char* name = "";
+        std::string name;
         double fixed_proportion     = 0.0;   /* proporcion permanente */
         double temporary_proportion = 0.0;   /* proporcion animada */
         SDL_FPoint center = { 0.0f, 0.0f };
@@ -31,18 +40,31 @@ public:
         float     angle_end   = 0.0f;
         SDL_Color color       = { 0, 0, 0, 0 };
 
-        section(const char* new_name, const pie_chart& chart, float radius,
-                float angle_start, float angle_end, SDL_Color color);
+        /* Animacion de hover: 0 = color permanente, 1 = resaltado completo.
+         * El booleano hover_active indica si la transicion esta en curso. */
+        double hover_state    = 0.0;
+        double hover_from     = 0.0;
+        double hover_to       = 0.0;
+        Uint64 hover_start_ms = 0;
+        bool   hover_active   = false;
+
+        /* Contorno negro del hover. Se dibuja despues de todos los rellenos
+         * para que las secciones vecinas no lo tapen. */
+        std::vector<SDL_Vertex> border_vertices;
+        std::vector<int>        border_indices;
+
+        section(const std::string& new_name, const pie_chart& chart,
+                float radius, float angle_start, float angle_end,
+                SDL_Color color);
         ~section();
 
         void calculate_vertices(const pie_chart& chart, double separation_state);
     };
 
     /* Especificacion: la suma de las proporciones no debe superar 1.0. Cada
-     * par (nombre, proporcion) genera una seccion. El color de cada seccion se
-     * toma de theme::color_sections en orden. */
+     * elemento genera una seccion con su nombre, su proporcion y su color. */
     pie_chart(SDL_Rect window,
-              const std::vector<std::pair<const char*, double>>& new_sections);
+              const std::vector<section_spec>& new_sections);
 
     /* Avanza las animaciones y recalcula los vertices de las secciones.
      * Si no hay ninguna animacion en curso no hace nada. */
@@ -62,15 +84,48 @@ public:
     /* Elige la seccion que crece (indice dentro de sections). */
     void set_growing_sector(int index);
 
+    /* Transicion de entrada a un hijo: junta las secciones hacia el centro y
+     * expande `index` hasta ocupar el 100 %. Ambas animaciones van a la vez. */
+    void collapse_to_sector(int index);
+
+    /* Estado inicial del chart hijo: `index` al 100 % y todo junto en el
+     * centro. Despues arranca la transicion inversa (separar y devolver la
+     * seccion a su proporcion fija) para revelar los demas sectores. */
+    void reveal_from_sector(int index);
+
+    /* true mientras la separacion o el crecimiento estan en curso. El hover
+     * no cuenta para esta comprobacion. */
+    bool animations_running() const;
+
+    /* Anima el resaltado de una seccion. hovered = true lo activa y false lo
+     * desactiva; si se activa una seccion, las demas se desactivan. */
+    void set_section_hover(int index, bool hovered);
+
+    /* Atajo para el raton: resuelve la seccion bajo (x, y) y actualiza el
+     * resaltado; si no hay ninguna, lo desactiva todo. */
+    void update_hover(float x, float y);
+
+    /* Desactiva el resaltado de todas las secciones. */
+    void clear_hover();
+
+    /* Indice de la seccion que contiene el punto, o -1 si ninguna. */
+    int section_at(float x, float y) const;
+
     void draw(SDL_Renderer* renderer) const;
 
 private:
     void update_separation();
     void update_proportions();
+    void update_hover_animation();
+    void recalculate_geometry();
+    void start_growing(int index, bool to_full);
+    double current_growth_amount() const;
+    void set_expanded_state(int index);
 
     SDL_FPoint           center = { 0.0f, 0.0f };
     float                radius = 0.0f;
     std::vector<section> sections;
+    int                  hovered_section = -1;   /* ultima seccion bajo el cursor */
 
     /* Animacion de proporciones: una transicion de una sola pasada por toggle.
      * growing_direction indica el sentido: true = al 100 %, false = a la fija. */

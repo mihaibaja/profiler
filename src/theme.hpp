@@ -11,7 +11,7 @@ namespace theme {
 
 /* ------------------------------------------------------------------ colores */
 
-constexpr SDL_Color color_background   = { 0x1a, 0x28, 0x48, 0xff };   /* #1a2848 */
+constexpr SDL_Color color_background   = { 0x70, 0x59, 0x48, 0xff };   /* #705948 */
 constexpr SDL_Color color_panel        = { 0x30, 0x49, 0x7d, 0xff };   /* #30497d */
 constexpr SDL_Color color_panel_raised = { 0x45, 0x5b, 0x8a, 0xff };   /* #455b8a */
 constexpr SDL_Color color_accent       = { 0xf2, 0x84, 0x2f, 0xff };   /* #f2842f */
@@ -36,9 +36,14 @@ constexpr SDL_Color color_sections[10] = {
 /* --------------------------------------------------------------- animacion */
 
 /* Duraciones en milisegundos. */
-constexpr double animation_separation_ms          = 1000.0;  /* separate() */
-constexpr double animation_growing_half_period_ms = 1000.0;  /* 0 -> 100 % */
-constexpr double animation_growing_period_ms      = 2.0 * animation_growing_half_period_ms;
+constexpr double animation_separation_ms          = 500.0;  /* separate() */
+constexpr double animation_growing_half_period_ms = 500.0;  /* 0 -> 100 % */
+constexpr double animation_hover_ms               = 150.0;   /* resaltado por hover */
+
+/* Resaltado de una seccion: el color se aclara hacia blanco y aparece un
+ * contorno negro. C1 = C0 + (255 - C0) * factor * estado. */
+constexpr float hover_brightness_factor = 0.25f;
+constexpr float hover_border_width      = 1.0f;   /* px */
 
 /* --------------------------------------------------------------- tipografia */
 
