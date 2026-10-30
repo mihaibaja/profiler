@@ -1,1 +1,22 @@
-/build
+# --- Productos de compilacion ----------------------------------------------
+build/
+build-*/
+cmake-build-*/
+CMakeCache.txt
+CMakeFiles/
+compile_commands.json
+.cache/
+*.o
+*.a
+*.so
+*.d
+*.x
+*.exe
+*.out
+*.gcda
+*.gcno
+*.profraw
+*.profdata
+*.dSYM/
+.ninja_deps
+.ninja_log
